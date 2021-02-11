@@ -1,0 +1,48 @@
+From 09ebb1288d031f07eae24dc2e4993d1fef069bab Mon Sep 17 00:00:00 2001
+From: Gary Wang <wzc782970009@gmail.com>
+Date: Thu, 11 Feb 2021 13:30:40 +0800
+Subject: [PATCH] mp3: id3: support id3v2.4 tag for id3 chapter markers
+
+---
+ modules/meta_engine/ID3Tag.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/modules/meta_engine/ID3Tag.h b/modules/meta_engine/ID3Tag.h
+index d60e965..b1240c5 100644
+--- a/modules/meta_engine/ID3Tag.h
++++ b/modules/meta_engine/ID3Tag.h
+@@ -20,9 +20,9 @@
+ #ifndef ID3TAG_H
+ #define ID3TAG_H
+ 
+-static uint32_t ID3TAG_ReadSize( const uint8_t *p_buffer, bool b_syncsafe )
++static uint32_t ID3TAG_ReadSize( const uint8_t *p_buffer, bool b_as_u32 )
+ {
+-    if( !b_syncsafe )
++    if( b_as_u32 )
+         return GetDWBE( p_buffer );
+     return ( (uint32_t)p_buffer[3] & 0x7F ) |
+             (( (uint32_t)p_buffer[2] & 0x7F ) << 7) |
+@@ -45,8 +45,8 @@ static size_t ID3TAG_Parse( const uint8_t *p_peek, size_t i_peek,
+     uint32_t i_ID3size = 0;
+     if( i_peek > 10 && ID3TAG_IsTag( p_peek, false ) )
+     {
+-        const bool b_syncsafe = p_peek[5] & 0x80;
+-        i_ID3size = ID3TAG_ReadSize( &p_peek[6], true );
++        const uint8_t i_ID3major = p_peek[3];
++        i_ID3size = ID3TAG_ReadSize( &p_peek[6], false );
+         if( i_ID3size > i_peek - 10 )
+             return 0;
+         i_total_size = i_ID3size + 10;
+@@ -54,7 +54,7 @@ static size_t ID3TAG_Parse( const uint8_t *p_peek, size_t i_peek,
+         while( i_ID3size > 10 )
+         {
+             uint32_t i_tagname = VLC_FOURCC( p_frame[0], p_frame[1], p_frame[2], p_frame[3] );
+-            uint32_t i_framesize = ID3TAG_ReadSize( &p_frame[4], b_syncsafe ) + 10;
++            uint32_t i_framesize = ID3TAG_ReadSize( &p_frame[4], i_ID3major == 3 ) + 10;
+             if( i_framesize > i_ID3size )
+                 return 0;
+ 
+-- 
+2.25.1
+
